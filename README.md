@@ -4,3 +4,136 @@
 # MT Plates
 
 Making a collage of Montana license plates for the niblings’ visit.
+
+Images of the standard plates (of which there are five) are taken from
+the [Montana Motor Vehicle Division (MVD) License Plates
+page](https://www.dmvusa.com/statelink.php?id=425). Images of specialty
+plates are taken from the [License Plate Designs and Fees
+page](https://dojmt.gov/driving/plate-designs-and-fees/) which, for some
+reason, is part of the Montana Department of Justice site.
+
+## Getting the plate images
+
+Since there are only five standard plates and they exist on a page
+separate from the one that lists specialty plates, I just manually and
+saved them into a folder (`imgs`). I’ll use
+[**rvest**](https://rvest.tidyverse.org/index.html) for the rest.
+
+``` r
+library(tidyverse)
+library(rvest)
+```
+
+Specialty plates are divided into 14 categories, each of which has its
+own listing page with the images of the page. We can get the titles and
+urls of those listing pages from the main page’s html using the rvest
+functions `html_elements()` and `html_attr()` (to select what attribute
+of the targeted itemse we want to return).
+
+``` r
+plate_html <- read_html("https://dojmt.gov/driving/plate-designs-and-fees/")
+
+page_titles <- plate_html |>
+  html_elements("a.bb-link") |>
+  html_attr("title")
+
+plate_pages <- plate_html |>
+  html_elements("a.bb-link") |>
+  html_attr("href")
+```
+
+The 14 categories are: Agriculture & Forestry, Antique, Arts & Culture,
+Collegiate, Education, Government & Communities, Military, Museums &
+History, Other, Parks & Environment, Service Organizations &
+Associations, Sports & Recreation, Wildlife and Other Animals, and Youth
+Groups.[^1]
+
+Now we can use `purrr::map()` to apply `read_html()` to each of those
+pages (all of which share the same structure) and store it in a list.
+This will allow us to do the rest of our `rvest`-ing (read: web
+scraping) across the pages with purrr, and avoid having to re-write
+redundant code. The goal is to get the name/title of each plate, and the
+url of its image.
+
+``` r
+page_htmls <- map(plate_pages, read_html)
+
+all_names <- map(
+  page_htmls, 
+  .f = \(x) 
+  html_elements(x, ".mkdf-ptf-item-title a") |> 
+  html_text2()
+  ) |>
+  list_c()
+
+all_images <- map(
+  page_htmls, 
+  .f = \(x)
+  html_elements(x, "img.attachment-full.size-full.wp-post-image") |> 
+  html_attr("src")
+  ) |>
+  list_c()
+```
+
+Let’s double check that we’ve got the same number of names and images.
+
+``` r
+length(all_names)
+#> [1] 231
+
+length(all_images)
+#> [1] 231
+```
+
+Success!
+
+Rather than have separate character vectors floating around, let’s
+combine them into a tibble.
+
+``` r
+all_plates <- tibble::tibble(
+  plate_name = all_names,
+  plate_image = all_images
+)
+```
+
+The plates’ image names from the site are a little inconsistent, so I’ll
+use `janitor::make_clean_names()` to make nicer ones from the plate
+names. Knowing that all of the images are `.jpg` files, I’ll combine my
+clean names with `glue()` to make file names for downloading (into the
+`imgs` folder I created earlier).
+
+``` r
+all_plates <- all_plates |>
+  mutate(file_name = glue::glue("imgs/{janitor::make_clean_names(plate_name)}.jpg"))
+```
+
+Now it’s time to actually save the images, which we’ll do with
+`purrr::walk2()` and the `utils::download.file()` function (with its
+first two arguments, `url` and `destfile`).[^2]
+
+``` r
+walk2(
+  all_plates$plate_image,
+  all_plates$file_name,
+  download.file
+)
+```
+
+Let’s see if it worked. If things went to plan, there should be 236
+files in the `imgs` folder (the 231 specialty plates, plus the five
+standard plates I saved in the beginning).
+
+``` r
+fs::dir_ls("imgs") |> length()
+#> [1] 236
+```
+
+Yay!
+
+[^1]: I know it looks like I laboriously listed those out, but I
+    actually used inline R code and passed `page_titles` into
+    `stringr::str_flatten_comma()`.
+
+[^2]: Since `download.file()` doesn’t know about data masking, we’ll
+    send in the data as vectors.
