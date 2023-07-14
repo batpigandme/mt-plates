@@ -96,3 +96,21 @@ plate_rows <- map2(row_lens, cumsum(row_lens),
 plate_rows[[1]]
 plate_rows[[2]]
 plate_rows[[3]]
+
+image_append(plate_rows, stack = TRUE)
+
+# Add stickers to canvas
+canvas <- image_blank(plate_row_size*plate_width,
+                      plate_height*plate_col_size,
+                      "white")
+
+mt_plate_collage <- reduce2(plate_rows, seq_along(plate_rows),
+        ~ image_composite(
+          ..1, ..2,
+          offset = paste0("+", 0,
+                          "+", round((..3-1)*plate_height))
+        ),
+        .init = canvas)
+
+fs::dir_create("imgs/collage")
+image_write(mt_plate_collage, "imgs/collage/mt_plate_collage.jpg")
