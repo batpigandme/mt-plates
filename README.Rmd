@@ -113,7 +113,7 @@ walk2(
 Let's see if it worked. If things went to plan, there should be 236 files in the `imgs` folder (the 231 specialty plates, plus the five standard plates I saved in the beginning).
 
 ```{r}
-fs::dir_ls("imgs") |> length()
+fs::dir_ls("imgs", glob = "*.jpg") |> length()
 ```
 
 Yay!

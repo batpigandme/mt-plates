@@ -79,10 +79,10 @@ Let’s double check that we’ve got the same number of names and images.
 
 ``` r
 length(all_names)
-#> [1] 231
+#> [1] 230
 
 length(all_images)
-#> [1] 231
+#> [1] 230
 ```
 
 Success!
@@ -125,7 +125,7 @@ files in the `imgs` folder (the 231 specialty plates, plus the five
 standard plates I saved in the beginning).
 
 ``` r
-fs::dir_ls("imgs") |> length()
+fs::dir_ls("imgs", glob = "*.jpg") |> length()
 #> [1] 236
 ```
 
