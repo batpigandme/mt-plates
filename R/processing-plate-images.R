@@ -45,6 +45,11 @@ plates |>
                  width < (plate_width-1)/2 && format != "svg")
   )
 
+# Identify CMYK plates
+plates |>
+  map_lgl(~ with(image_info(.x),
+                 colorspace == "CMYK")) -> colorspace_plates
+
 # Identify incorrect shapes / proportions (tolerance of +-2 height)
 plates |>
   map_lgl(~ with(image_info(.x),
@@ -108,7 +113,7 @@ mt_plate_collage <- reduce2(plate_rows, seq_along(plate_rows),
         ~ image_composite(
           ..1, ..2,
           offset = paste0("+", 0,
-                          "+", round((..3-1)*plate_height))
+                          "+", round((..3-1)*plate_height)) # no extra height for first row
         ),
         .init = canvas)
 
