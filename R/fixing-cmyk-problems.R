@@ -104,10 +104,6 @@ plate_rows <- map2(row_lens, cumsum(row_lens),
         invoke(c, .) %>%
         image_append)
 
-plate_rows[[1]]
-plate_rows[[2]]
-plate_rows[[3]]
-
 image_append(plate_rows, stack = TRUE)
 
 # Add plates to canvas
