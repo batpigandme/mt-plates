@@ -72,6 +72,7 @@ plates <- plates %>%
 plates[["salish_kootenai_college.jpg"]]
 
 # Sort stickers by colour
+# src: https://github.com/mitchelloharawild/hexwall/blob/f3e67a968d972bf6bc86923f0985ded464b7b8cd/hexwall.R#L82-L91
 plate_col <- plates %>%
   map(image_resize, "1x1!") %>%
   map(image_data) %>%
